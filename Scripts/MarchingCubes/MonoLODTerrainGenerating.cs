@@ -34,7 +34,7 @@ public class MonoLODTerrainGenerating : MonoBehaviour {
     void Start() {
         mapManager = FindObjectOfType<MapManager>();
         chunkSize = MapManager.chunkSize - 1;
-        chunkScale = mapManager.terrainData.scale;
+        chunkScale = MapManager.terrainScale;
 
         maxViewDistance = detailLevels[detailLevels.Length-1].y;
         chunksVisibleInViewDistance = Mathf.CeilToInt(maxViewDistance / chunkSize);
@@ -170,7 +170,7 @@ public class MonoLODTerrainGenerating : MonoBehaviour {
             meshFilters = new MeshFilter[verticalChunks];
 
             Vector3 position3d = new Vector3(position.x, 0, position.y);
-            parentObject.transform.position = position3d * mapManager.terrainData.scale;
+            parentObject.transform.position = position3d * MapManager.terrainScale;
             parentObject.transform.parent = parent;
             
             for(int i = 0; i < verticalChunks; i++){
@@ -181,9 +181,9 @@ public class MonoLODTerrainGenerating : MonoBehaviour {
                 meshRenderers[i].material = mapManager.GetBiomeMaterial(position);
 
                 position3d.y = i * size;
-                chunkObjects[i].transform.position = position3d * mapManager.terrainData.scale;
+                chunkObjects[i].transform.position = position3d * MapManager.terrainScale;
                 chunkObjects[i].transform.parent = parentObject.transform;
-                chunkObjects[i].transform.localScale = Vector3.one * mapManager.terrainData.scale;
+                chunkObjects[i].transform.localScale = Vector3.one * MapManager.terrainScale;
             }
         }
 
@@ -191,7 +191,7 @@ public class MonoLODTerrainGenerating : MonoBehaviour {
             position = chunkID * size;
             this.chunkID = chunkID;
             Vector3 position3d = new Vector3(position.x, 0, position.y);
-            parentObject.transform.position = position3d * mapManager.terrainData.scale;
+            parentObject.transform.position = position3d * MapManager.terrainScale;
             this.lod = currentLOD;
 
             parentObject.name = "Terrain Chunk " + chunkID.ToString();

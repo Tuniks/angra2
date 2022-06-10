@@ -6,18 +6,15 @@ using System.Threading;
 using UnityEngine.Rendering;
 
 public class MapManager : MonoBehaviour {
-    public TerrainData terrainData;
-
     public BiomeDensityData[] biomeDensityData;
     public Material[] biomeMaterials;
 
     public ComputeShader VertexSharingMarchingCubeShader;
     public ComputeShader DensityNoiseTextureShader;
 
-    public const int chunkSize = 103;
-    // public const int chunkSize = 205;
-
-    public const float chunkScale = 1f;
+    public const int chunkSize = 103; // 205
+    public const float terrainScale = 15f;
+    public const float gridScale = 1f;
     public float surfaceLevel;
     public Vector2[] noiseParameters;
     public Vector2 previewOffset;
@@ -30,7 +27,7 @@ public class MapManager : MonoBehaviour {
     public void GenerateMapDataTexture(Vector2 center, int lod, int chunkSize, RenderTexture mapData) {
         Vector3 center3d = new Vector3(center.x, 0, center.y);
         DensityGenerator densityGenerator = new DensityGenerator();
-        densityGenerator.GenerateMapDensityTexture(mapData, chunkSize, chunkScale, lod, biomeDensityData, center3d, DensityNoiseTextureShader, function);
+        densityGenerator.GenerateMapDensityTexture(mapData, chunkSize, gridScale, lod, biomeDensityData, center3d, DensityNoiseTextureShader, function);
     }
 
     public RenderTexture CreateTextureBuffer(int meshSize){
@@ -48,7 +45,7 @@ public class MapManager : MonoBehaviour {
     // Only used for mono LOD terrain generating
     public Mesh GenerateSharedVerticesMesh(RenderTexture mapDataTexture, int lod, int relativeChunkSize){
         SharedMCMesh meshGenerator = new SharedMCMesh();
-        return meshGenerator.CreateMesh(mapDataTexture, relativeChunkSize, chunkScale, surfaceLevel, lod, VertexSharingMarchingCubeShader);
+        return meshGenerator.CreateMesh(mapDataTexture, relativeChunkSize, gridScale, surfaceLevel, lod, VertexSharingMarchingCubeShader);
     }
 
     public Material GetBiomeMaterial(Vector2 chunkPosition){
@@ -68,6 +65,6 @@ public class MapManager : MonoBehaviour {
     // === 3D CHUNK EXP ===
     public void GenerateMapDataTextureFrom3DOrigin(Vector3 center, int lod, int chunkSize, RenderTexture mapData) {
         DensityGenerator densityGenerator = new DensityGenerator();
-        densityGenerator.GenerateMapDensityTexture(mapData, chunkSize, chunkScale, lod, biomeDensityData, center, DensityNoiseTextureShader, function);
+        densityGenerator.GenerateMapDensityTexture(mapData, chunkSize, gridScale, lod, biomeDensityData, center, DensityNoiseTextureShader, function);
     }
 }

@@ -130,42 +130,4 @@ public class DensityGenerator {
 
         ReleaseBuffers();
     }
-
-    // ============== LEGACY ===================
-
-    public void AsyncGenerateMapDensity(ComputeBuffer pointsBuffer, int gridSize, float gridScale, int lod, Vector2[] noiseParameters, Vector2 center, ComputeShader cs, Vector4 function) {
-        if(gridSize == 0) return;
-
-        DensityNoiseShader = cs;
-        int octaves = noiseParameters.Length; 
-
-        CreateBuffers(octaves);
-
-        Random.InitState(1996);
-        Vector3[] octaveOffsets = new Vector3[octaves];
-        for (int i = 0; i < octaves; i++) {
-            octaveOffsets[i] = new Vector3 (Random.Range(-99999,99999), Random.Range(-99999,99999), Random.Range(-99999,99999));
-        }
-
-        //Set compute shader variables
-        offsetsBuffer.SetData(octaveOffsets);
-        parametersBuffer.SetData(noiseParameters);
-
-        DensityNoiseShader.SetBuffer(0, "points", pointsBuffer);
-        DensityNoiseShader.SetBuffer(0, "noiseOffsets", offsetsBuffer);
-        DensityNoiseShader.SetBuffer(0, "noiseParameters", parametersBuffer);
-        DensityNoiseShader.SetInt("gridSize", gridSize);
-        DensityNoiseShader.SetInt("octaves", octaves);
-        DensityNoiseShader.SetInt("lod", lod);
-        DensityNoiseShader.SetFloat("gridScale", gridScale);
-        DensityNoiseShader.SetVector("center", new Vector3(center.x, 0, center.y));
-        DensityNoiseShader.SetVector("function", function);
-
-
-        //Dispatching the baby
-        // TODO Optimize thread and group size so you dont need a conditional on the shader
-        // TODO resource https://docs.microsoft.com/en-us/windows/win32/direct3dhlsl/sv-dispatchthreadid
-        int threadGroups = Mathf.CeilToInt(gridSize/ (float) noThreads);
-        DensityNoiseShader.Dispatch(0, threadGroups, threadGroups, threadGroups);
-    }
 }

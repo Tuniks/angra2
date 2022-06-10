@@ -52,7 +52,7 @@ public class AsyncTerrainGeneration : MonoBehaviour {
     void Start() {
         mapManager = FindObjectOfType<MapManager>();
         chunkSize = MapManager.chunkSize - 1;
-        chunkScale = mapManager.terrainData.scale;
+        chunkScale = MapManager.terrainScale;
 
         meshCreator = new AsyncSharedMCMesh(mapManager.VertexSharingMarchingCubeShader, mapManager.surfaceLevel);
 
@@ -193,9 +193,9 @@ public class AsyncTerrainGeneration : MonoBehaviour {
 
     Bounds CalculateBounds(Vector2 chunkID){
         int verticalChunks = 3;
-        Vector2 pos2d = chunkID * chunkSize *  mapManager.terrainData.scale;
-        Vector3 pos3d = new Vector3(pos2d.x, verticalChunks/2 * chunkSize *  mapManager.terrainData.scale, pos2d.y);
-        Vector3 lengths = new Vector3(1, verticalChunks/2, 1) * chunkSize *  mapManager.terrainData.scale;
+        Vector2 pos2d = chunkID * chunkSize * chunkScale;
+        Vector3 pos3d = new Vector3(pos2d.x, verticalChunks/2 * chunkSize *  chunkScale, pos2d.y);
+        Vector3 lengths = new Vector3(1, verticalChunks/2, 1) * chunkSize *  chunkScale;
  
         return new Bounds(pos3d, lengths);
     }
@@ -229,7 +229,7 @@ public class AsyncTerrainGeneration : MonoBehaviour {
             meshFilters = new MeshFilter[verticalChunks];
 
             Vector3 position3d = new Vector3(position.x, 0, position.y);
-            parentObject.transform.position = position3d * mapManager.terrainData.scale;
+            parentObject.transform.position = position3d * MapManager.terrainScale;
             parentObject.transform.parent = parent;
             parentObject.SetActive(false);
 
@@ -241,9 +241,9 @@ public class AsyncTerrainGeneration : MonoBehaviour {
                 meshRenderers[i].material = mapManager.GetBiomeMaterial(position);
 
                 position3d.y = i * size;
-                chunkObjects[i].transform.position = position3d * mapManager.terrainData.scale;
+                chunkObjects[i].transform.position = position3d * MapManager.terrainScale;
                 chunkObjects[i].transform.parent = parentObject.transform;
-                chunkObjects[i].transform.localScale = Vector3.one * mapManager.terrainData.scale;
+                chunkObjects[i].transform.localScale = Vector3.one * MapManager.terrainScale;
             }
 
             meshCollider = chunkObjects[1].AddComponent<MeshCollider>(); // Only collide w middle chunk
@@ -256,7 +256,7 @@ public class AsyncTerrainGeneration : MonoBehaviour {
             this.chunkID = chunkID;
             position = chunkID * size;
             Vector3 position3d = new Vector3(position.x, 0, position.y);
-            parentObject.transform.position = position3d * mapManager.terrainData.scale;
+            parentObject.transform.position = position3d * MapManager.terrainScale;
             this.lod = currentLOD;
 
             shouldPlaceAssets = _shouldPlaceAssets;
@@ -329,7 +329,7 @@ public class AsyncTerrainGeneration : MonoBehaviour {
                 return;
             }
             meshCollider.sharedMesh = meshFilters[1].sharedMesh;
-            assetPlacer.PlaceAssets(new Vector3(position.x, 0, position.y) * mapManager.terrainData.scale, (MapManager.chunkSize - 1) * mapManager.terrainData.scale);
+            assetPlacer.PlaceAssets(new Vector3(position.x, 0, position.y) * MapManager.terrainScale, (MapManager.chunkSize - 1) * MapManager.terrainScale);
         }
     }
 }
