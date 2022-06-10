@@ -19,8 +19,6 @@ public class MapManager : MonoBehaviour {
     public Vector2[] noiseParameters;
     public Vector2 previewOffset;
 
-    public bool autoUpdate;
-
     public Vector4 function;
 
     // ================ VERTEX SHARING MARCHING CUBES ============
@@ -40,12 +38,6 @@ public class MapManager : MonoBehaviour {
         tex.Create();
 
         return tex;
-    }
-
-    // Only used for mono LOD terrain generating
-    public Mesh GenerateSharedVerticesMesh(RenderTexture mapDataTexture, int lod, int relativeChunkSize){
-        SharedMCMesh meshGenerator = new SharedMCMesh();
-        return meshGenerator.CreateMesh(mapDataTexture, relativeChunkSize, gridScale, surfaceLevel, lod, VertexSharingMarchingCubeShader);
     }
 
     public Material GetBiomeMaterial(Vector2 chunkPosition){

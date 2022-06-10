@@ -386,9 +386,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: daf8e28a55fc53540820bb51465632b3, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  terrainData: {fileID: 11400000, guid: 73d7f72b8207f3149bd8732559d38fec, type: 2}
-  noiseData: {fileID: 11400000, guid: 052fa8cc14f24f84f823ffe44f0d15f7, type: 2}
-  textureData: {fileID: 11400000, guid: 1ea78aa894988ae42b3c7bd490526029, type: 2}
   biomeDensityData:
   - {fileID: 11400000, guid: e21e0892f83a1b1409f8b45f16aa2875, type: 2}
   - {fileID: 11400000, guid: 642d72ab28ca0574eaffa74ed002af0f, type: 2}
@@ -403,7 +400,6 @@ MonoBehaviour:
     type: 3}
   DensityNoiseTextureShader: {fileID: 7200000, guid: 114c3ec2093f5194abbcf3e2790463dc,
     type: 3}
-  levelOfDetailPreview: 2
   surfaceLevel: 20
   noiseParameters:
   - {x: 0.09, y: 1}
