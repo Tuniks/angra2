@@ -1,0 +1,238 @@
+#pragma kernel IslandDensity
+#pragma kernel DunesDensity
+#pragma kernel MountainsDensity
+#pragma kernel RockOceanDensity
+
+#include "Includes/SimplexNoise.compute"
+
+RWTexture3D<float> points;
+
+StructuredBuffer<float2> noiseParameters;
+StructuredBuffer<float3> noiseOffsets;
+int gridSize;
+float gridScale;
+float3 center;
+int octaves;
+int lod;
+float4 function;
+
+int indexFromCoord(int x, int y, int z) {
+    return z * gridSize * gridSize + y * gridSize + x;
+}
+
+float2 getBiomeWs(float2 ws){
+    return abs((ws) % (204 * 10));
+}
+
+float2 getEndOfBiomeMultiplier(float2 biomeWs){
+    return saturate((206*9 - biomeWs)/204);
+}
+
+float2 getStartOfBiomeMultiplier(float2 biomeWs){
+    return saturate(biomeWs/204);
+}
+
+[numthreads(8,8,8)]
+void IslandDensity (int3 id : SV_DispatchThreadID) {
+    if (id.x >= gridSize || id.y >= gridSize || id.z >= gridSize){
+        return;
+    }
+
+    float hardFloor = 40;
+    float3 warpModifier;
+
+    float3 ws = id.xyz * lod * gridScale + center;
+    float totalNoiseValue = 0;
+
+    warpModifier.x = 20 * snoise(ws * 0.009); //falta um fator multiplicativo
+    warpModifier.y = 20 * snoise(ws * 0.013);
+    warpModifier.z = 20 * snoise(ws * 0.011);
+
+
+    for (int j = 0; j < octaves; j ++) {
+        float3 scaledWS = noiseParameters[j].x * (ws + noiseOffsets[j] + warpModifier);
+        float noiseValue = noiseParameters[j].y * snoise(scaledWS);
+        totalNoiseValue += noiseValue;
+    }
+
+    float density = totalNoiseValue;
+
+    if (ws.y > hardFloor) {
+        density -= ws.y * 1.1;
+
+        if(ws.y < 72) {
+            density -= ws.y * 0.3;
+            density += saturate((57 - ws.y)) * 5;
+            density += saturate((64 - ws.y)) * 5;
+            density += saturate((71 - ws.y)) * 5;
+
+        } else {
+            density -= ws.y * 0.3;
+            density += lerp(-10, 220, (ws.y - 72)/(205*1 - 72)) * 2;
+            density -= (ws.y - 72) * (ws.y - 72) * 0.025 - (ws.y - 72) * 0.3;
+            density += lerp(0, 300, 0.83 * saturate(20 - abs(ws.y - 110)) * saturate(saturate(snoise(abs(ws) * 0.00012) * 2 - 0.5) * 3 + 0.1)) * 1.1;
+
+        }
+    } else {
+        density -= 0.7 * ws.y;
+    }
+
+    density += saturate((hardFloor - ws.y)) * 15;
+    density += 50;
+
+    // ground floor, must always be present to avoid inexistent mesh at the bottom
+    float absoluteFloor = saturate((7 - ws.y)) * 600;
+    float absoluteCeiling = saturate(ws.y - 305) * -600;
+
+    // 1st and 9th chunk starts to taper density down, 10th chunk is empty for change in biome
+    // float2 biomeWs = abs((ws.xz) % (204 * 11));
+    // float2 endOfBiomeMultiplier = saturate((204*9 - biomeWs)/204 + 1);
+    // float2 startOfBiomeMultiplier = saturate(biomeWs/204);
+    float2 biomeWs = getBiomeWs(ws.xz);
+    float2 endOfBiomeMultiplier = getEndOfBiomeMultiplier(biomeWs);
+    float2 startOfBiomeMultiplier = getStartOfBiomeMultiplier(biomeWs);
+
+    points[id.xyz] = density * endOfBiomeMultiplier.x * startOfBiomeMultiplier.x * endOfBiomeMultiplier.y * startOfBiomeMultiplier.y + absoluteFloor + absoluteCeiling;
+    // points[id.xyz] = density;
+}
+
+[numthreads(8,8,8)]
+void DunesDensity (int3 id : SV_DispatchThreadID) {
+    if (id.x >= gridSize || id.y >= gridSize || id.z >= gridSize){
+        return;
+    }
+
+    float3 warpModifier;
+
+    float3 ws = id.xyz * lod * gridScale + center;
+    float totalNoiseValue = 0;
+
+    warpModifier.x = 20 * snoise(ws * 0.009); //falta um fator multiplicativo
+    warpModifier.y = 20 * snoise(ws * 0.013);
+    warpModifier.z = 20 * snoise(ws * 0.011);
+
+
+    for (int j = 0; j < octaves; j ++) {
+        float3 scaledWS = noiseParameters[j].x * (ws + noiseOffsets[j]);
+        float noiseValue = noiseParameters[j].y * snoise(scaledWS);
+        totalNoiseValue += noiseValue;
+    }
+
+    float density = totalNoiseValue;
+
+    density -= 0.7 * ws.y;
+    density += 130;
+
+    // ground floor, must always be present to avoid inexistent mesh at the bottom
+    float absoluteFloor = saturate((7 - ws.y)) * 600;
+    float absoluteCeiling = saturate(ws.y - 305) * -600;
+
+    // 1st and 9th chunk starts to taper density down, 10th chunk is empty for change in biome
+    float2 biomeWs = getBiomeWs(ws.xz);
+    float2 endOfBiomeMultiplier = getEndOfBiomeMultiplier(biomeWs);
+    float2 startOfBiomeMultiplier = getStartOfBiomeMultiplier(biomeWs);
+
+    points[id.xyz] = density * endOfBiomeMultiplier.x * startOfBiomeMultiplier.x * endOfBiomeMultiplier.y * startOfBiomeMultiplier.y + absoluteFloor + absoluteCeiling;
+    // points[id.xyz] = density + absoluteFloor + absoluteCeiling;
+    // points[id.xyz] = density;
+}
+
+[numthreads(8,8,8)]
+void MountainsDensity (int3 id : SV_DispatchThreadID) {
+    if (id.x >= gridSize || id.y >= gridSize || id.z >= gridSize){
+        return;
+    }
+
+    float3 warpModifier;
+
+    float3 ws = id.xyz * lod * gridScale + center;
+    float totalNoiseValue = 0;
+
+    warpModifier.x = 20 * snoise(ws * 0.009); //falta um fator multiplicativo
+    warpModifier.y = 20 * snoise(ws * 0.013);
+    warpModifier.z = 20 * snoise(ws * 0.011);
+
+    float weight = 1;
+    for (int j = 0; j < octaves; j ++) {
+        float3 scaledWS = noiseParameters[j].x/14 * (ws + noiseOffsets[j] + warpModifier);
+        float noiseValue = 1 - abs(snoise(scaledWS));
+        noiseValue = noiseValue * noiseValue;
+        noiseValue *= weight;
+        totalNoiseValue += 1.75 * noiseParameters[j].y * noiseValue;
+
+        weight = max(min(noiseValue*0.7,1),0);
+    }
+
+    float density = totalNoiseValue;
+
+    density += -ws.y * 0.7;
+    density += 65;
+
+    // ground floor, must always be present to avoid inexistent mesh at the bottom
+    float absoluteFloor = saturate((7 - ws.y)) * 600;
+    float absoluteCeiling = saturate(ws.y - 305) * -600;
+
+    // 1st and 9th chunk starts to taper density down, 10th chunk is empty for change in biome
+    float2 biomeWs = getBiomeWs(ws.xz);
+    float2 endOfBiomeMultiplier = getEndOfBiomeMultiplier(biomeWs);
+    float2 startOfBiomeMultiplier = getStartOfBiomeMultiplier(biomeWs);
+
+    points[id.xyz] = density * endOfBiomeMultiplier.x * startOfBiomeMultiplier.x * endOfBiomeMultiplier.y * startOfBiomeMultiplier.y + absoluteFloor + absoluteCeiling;
+    // points[id.xyz] = density  + absoluteFloor + absoluteCeiling;
+    // points[id.xyz] = density;
+}
+
+[numthreads(8,8,8)]
+void RockOceanDensity (int3 id : SV_DispatchThreadID) {
+    if (id.x >= gridSize || id.y >= gridSize || id.z >= gridSize){
+        return;
+    }
+
+    float hardFloor = 40;
+
+    float3 ws = id.xyz * lod * gridScale + center;
+    float totalNoiseValue = 0;
+
+    for (int j = 0; j < octaves; j ++) {
+        float3 scaledWS = noiseParameters[j].x * (ws + noiseOffsets[j]);
+        float noiseValue = noiseParameters[j].y * snoise(scaledWS);
+        totalNoiseValue += noiseValue * 1.7;
+    }
+
+    float density = totalNoiseValue;
+
+    if (ws.y > hardFloor) {
+        density -= ws.y * 1.2;
+
+        density += saturate((57 - ws.y)) * 25;
+        density += saturate((64 - ws.y)) * 25;
+        density += saturate((71 - ws.y)) * 25;
+        density += saturate((91 - ws.y)) * 25;
+        density += saturate((101 - ws.y)) * 40;
+        density += saturate((131 - ws.y)) * 20;
+        density += saturate((161 - ws.y)) * 10;
+        density += saturate((181 - ws.y)) * 5;
+        if(ws.y>160){
+            density -= ws.y * 0.05;
+        }
+
+    } else {
+        density -= 0.7 * ws.y;
+    }
+
+    // density += saturate((hardFloor - ws.y)) * 15;
+    density += 30;
+
+    // ground floor, must always be present to avoid inexistent mesh at the bottom
+    float absoluteFloor = saturate((7 - ws.y)) * 600;
+    float absoluteCeiling = saturate(ws.y - 305) * -600;
+
+    // 1st and 9th chunk starts to taper density down, 10th chunk is empty for change in biome
+    float2 biomeWs = getBiomeWs(ws.xz);
+    float2 endOfBiomeMultiplier = getEndOfBiomeMultiplier(biomeWs);
+    float2 startOfBiomeMultiplier = getStartOfBiomeMultiplier(biomeWs);
+
+    points[id.xyz] = density * endOfBiomeMultiplier.x * startOfBiomeMultiplier.x * endOfBiomeMultiplier.y * startOfBiomeMultiplier.y + absoluteFloor + absoluteCeiling;
+    // points[id.xyz] = density  + absoluteFloor + + absoluteCeiling;
+    // points[id.xyz] = density;
+}
