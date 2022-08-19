@@ -6,6 +6,7 @@ using UnityEngine.Rendering;
 public class DrawChunk : MonoBehaviour {
     public ComputeShader cs;
     public ComputeShader DensityNoiseTextureShader;
+    public BiomeDensityData[] biomeDensityData;
     
     private int noThreadsCases = 8;
     private int noThreadsVertex = 512;
@@ -24,7 +25,7 @@ public class DrawChunk : MonoBehaviour {
     RenderTexture vertexIndexVol;
 
     public const int chunkSize = 205;
-    public const float chunkScale = 1f;
+    public const float chunkScale = 15f;
     public float surfaceLevel;
     public Vector2[] noiseParameters;
     public Vector2 chunkOffset;
@@ -53,8 +54,6 @@ public class DrawChunk : MonoBehaviour {
         bounds = new Bounds(boundsCenter, new Vector3(chunkSize, chunkSize, chunkSize));
         
         Debug.Log(triangleCount);
-
-        // Graphics.DrawProcedural(material, bounds, MeshTopology.Triangles, triangleCount);
     }
 
     void Update(){
@@ -67,7 +66,7 @@ public class DrawChunk : MonoBehaviour {
 
     void GenerateMapDensity(Vector2 center, int lod, int chunkSize, RenderTexture mapData){
         DensityGenerator densityGenerator = new DensityGenerator();
-        // densityGenerator.GenerateMapDensityTexture(mapData, chunkSize, chunkScale, lod, noiseParameters, center, DensityNoiseTextureShader, new Vector4(0,0,0,0));
+        densityGenerator.GenerateMapDensityTexture(mapData, chunkSize, chunkScale, lod, biomeDensityData, center, DensityNoiseTextureShader, new Vector4(0,0,-128.39f,0));
     }
 
     void DispatchMarchingCubesShader(RenderTexture mapDensity, int meshSize){

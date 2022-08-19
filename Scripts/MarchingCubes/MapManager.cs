@@ -54,7 +54,7 @@ public class MapManager : MonoBehaviour {
         return biomeMaterials[biomeID];
     }
 
-    // === 3D CHUNK EXP ===
+    // ================ 3D CHUNK EXP ============
     public void GenerateMapDataTextureFrom3DOrigin(Vector3 center, int lod, int chunkSize, RenderTexture mapData) {
         DensityGenerator densityGenerator = new DensityGenerator();
         densityGenerator.GenerateMapDensityTexture(mapData, chunkSize, gridScale, lod, biomeDensityData, center, DensityNoiseTextureShader, function);

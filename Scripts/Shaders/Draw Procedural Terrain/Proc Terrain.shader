@@ -1,4 +1,4 @@
-Shader "Custom/NewNewChunkGeometry" {
+Shader "Custom/ProcTerrain" {
     Properties {
         // Shader properties which are editable in the material
         _MainTex ("Texture", 2D) = "white" {}
@@ -30,7 +30,7 @@ Shader "Custom/NewNewChunkGeometry" {
             #pragma fragment Fragment
 
             // Include our logic file
-            #include "Include/ChunkGeometry.hlsl"    
+            #include "../Include/ChunkGeometry.hlsl"    
 
             ENDHLSL
         }
@@ -59,7 +59,7 @@ Shader "Custom/NewNewChunkGeometry" {
             #define SHADOW_CASTER_PASS
 
             // Include our logic file
-            #include "Include/ChunkGeometry.hlsl"    
+            #include "../Include/ChunkGeometry.hlsl"    
 
             ENDHLSL
         }
