@@ -25,7 +25,7 @@ public class DrawChunk : MonoBehaviour {
     RenderTexture vertexIndexVol;
 
     public const int chunkSize = 205;
-    public const float chunkScale = 15f;
+    public const float chunkScale = 1f;
     public float surfaceLevel;
     public Vector2[] noiseParameters;
     public Vector2 chunkOffset;
