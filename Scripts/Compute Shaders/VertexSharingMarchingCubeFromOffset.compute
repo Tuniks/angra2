@@ -1,0 +1,242 @@
+#pragma kernel ListCases
+#pragma kernel GenVertices
+#pragma kernel GenTriangles
+#include "CubeTable.compute"
+
+// Corner numbering system
+//      5----6
+//     /|   /|       y   z
+//    1----2 |       ^  /    
+//    | 4--|-7       | /
+//    |/   |/         --> x
+//    0----3 
+
+// ListCases Buffers
+Texture3D<float> points;
+SamplerState sampler_trilinear_clamp;
+AppendStructuredBuffer<uint> cases;
+RWStructuredBuffer<uint> triangleCounter;
+RWStructuredBuffer<uint> vertexCounter;
+
+// GenVertices Buffers
+StructuredBuffer<uint> inCases;
+RWStructuredBuffer<float3> vertexBuffer;
+RWStructuredBuffer<float3> normalBuffer;
+RWTexture3D<int3> vertexIndexVol;
+StructuredBuffer<int> casesCount;
+RWStructuredBuffer<uint> vertexIndexCounter;
+
+// GenTriangles Buffers
+RWStructuredBuffer<uint> currentIndexCounter;
+Texture3D<int3> indexVol;
+RWStructuredBuffer<int> triangles;
+
+float surfaceLevel;
+int gridSize;
+int lod;
+float3 offset;
+
+float3 interpolateVertices(float v1, float3 c1, float v2, float3 c2) {
+    float t = (surfaceLevel - v1) / (v2 - v1);
+    return c1.xyz + t * (c2.xyz-c1.xyz);
+}
+
+int indexFromCoord(int x, int y, int z) {
+    return z * gridSize * gridSize + y * gridSize + x;
+}
+
+bool checkIfEqual(int x, int y){
+    return !(x ^ y);
+}
+
+bool checkIfDifferent(int x, int y){
+    return (x ^ y);
+}
+
+float3 CalculateNormal(float3 pos){
+    float d = (float)1/((gridSize+1)*lod);
+    
+    // float3 position = (pos.xyz - offset.xyz)/((gridSize) * lod);
+    float3 position = pos/((float)(lod)*gridSize+1);
+    
+    float3 gradient;
+    gradient.x = points.SampleLevel(sampler_trilinear_clamp, position + float3(d, 0, 0), 0) - points.SampleLevel(sampler_trilinear_clamp, position + float3(-d, 0, 0), 0);
+    gradient.y = points.SampleLevel(sampler_trilinear_clamp, position + float3(0, d, 0), 0) - points.SampleLevel(sampler_trilinear_clamp, position + float3(0, -d, 0), 0);
+    gradient.z = points.SampleLevel(sampler_trilinear_clamp, position + float3(0, 0, d), 0) - points.SampleLevel(sampler_trilinear_clamp, position + float3(0, 0, -d), 0);
+
+    // gradient.x = points.Load(int4(position + float3(d, 0, 0), 0)) - points.Load(int4(position + float3(-d, 0, 0), 0));
+    // gradient.y = points.Load(int4(position + float3(0, d, 0), 0)) - points.Load(int4(position + float3(0, -d, 0), 0));
+    // gradient.z = points.Load(int4(position + float3(0, 0, d), 0)) - points.Load(int4(position + float3(0, 0, -d), 0));
+
+    return -normalize(gradient);
+}
+
+[numthreads(8,8,8)]
+void ListCases (int3 id : SV_DispatchThreadID) {
+    if (id.x > gridSize - 1 || id.y > gridSize-1 || id.z > gridSize - 1){
+        return;
+    }
+
+    float cubeVertices[8] = {
+        points.Load(int4(id.x, id.y, id.z, 0)),
+        points.Load(int4(id.x, id.y + 1, id.z, 0)),
+        points.Load(int4(id.x + 1, id.y + 1, id.z, 0)),
+        points.Load(int4(id.x + 1, id.y, id.z, 0)),
+        points.Load(int4(id.x, id.y, id.z + 1, 0)),
+        points.Load(int4(id.x, id.y + 1, id.z + 1, 0)),
+        points.Load(int4(id.x + 1, id.y + 1, id.z + 1, 0)),
+        points.Load(int4(id.x + 1, id.y, id.z + 1, 0))
+    };
+
+    // Checking which vertices are under the surface, creating a index based on which vertices are over or under the surface
+    int cubeIndex = 0;
+    if (cubeVertices[0] < surfaceLevel) cubeIndex |= 1;
+    if (cubeVertices[1] < surfaceLevel) cubeIndex |= 2;
+    if (cubeVertices[2] < surfaceLevel) cubeIndex |= 4;
+    if (cubeVertices[3] < surfaceLevel) cubeIndex |= 8;
+    if (cubeVertices[4] < surfaceLevel) cubeIndex |= 16;
+    if (cubeVertices[5] < surfaceLevel) cubeIndex |= 32;
+    if (cubeVertices[6] < surfaceLevel) cubeIndex |= 64;
+    if (cubeVertices[7] < surfaceLevel) cubeIndex |= 128;
+
+    // Using generated cubeIndex on the lookup talbe to see which mesh configuration we have
+    // And count numbers of triangles on the configuration and the number of vertices on edges 0, 1 and 8
+    uint trianglesCount = case_to_numpolys[cubeIndex];
+    if(trianglesCount > 0) {
+        uint vertexCount = 0;
+        for(int i = 0; triangulation[cubeIndex][i] != -1; i++) {
+            vertexCount += checkIfEqual(triangulation[cubeIndex][i], 0);
+            vertexCount += checkIfEqual(triangulation[cubeIndex][i], 3);
+            vertexCount += checkIfEqual(triangulation[cubeIndex][i], 8);
+        };;
+
+        // Store cube ID and cube configuration for case list
+        uint cubeCase = (id.x << 24) | (id.y << 16) | (id.z << 8) | cubeIndex;
+        // Check if voxel is near the ending edges, where no triangles will be created. = 0 if on last, 1 if not
+        int isOnLastPosition = checkIfDifferent(id.x, gridSize - 1) * checkIfDifferent(id.y, gridSize - 1) * checkIfDifferent(id.z, gridSize - 1);
+
+        cases.Append(cubeCase);
+        InterlockedAdd(triangleCounter[0], trianglesCount * isOnLastPosition);
+        InterlockedAdd(vertexCounter[0], vertexCount);
+    }
+}
+
+[numthreads(512,1,1)]
+void GenVertices (int3 id : SV_DispatchThreadID) {
+    if (id.x >= casesCount[0]){
+        return;
+    }
+
+    // cubeCase = 8x 8z 8y 8case
+    uint cubeCase = inCases[id.x];
+    int caseNumber = (int)(cubeCase & 0xff);
+    uint3 cubeCoordinate;
+    cubeCoordinate.x = (cubeCase >> 24) & 0xff;
+    cubeCoordinate.y = (cubeCase >> 16) & 0xff;
+    cubeCoordinate.z = (cubeCase >> 8) & 0xff;
+
+    // extract bits 0, 1, 3 and 4 from the case. Those bits represent the similarly numbered vertex.
+    // the connection of those vertices make up edges 0, 3 and 8, the only edges we are interested.
+    // if bit/vertex 0 is different from bit 1, 3 or 4 it means an vertex must be placed in that edge
+    int bit0 = (caseNumber) & 1;
+    int diff10 = ((caseNumber >> 1) ^ bit0) & 1;
+    int diff30 = ((caseNumber >> 3) ^ bit0) & 1;
+    int diff40 = ((caseNumber >> 4) ^ bit0) & 1;
+
+    // Add number of verts to counter and get current index
+    int numVerts = diff10 + diff30 + diff40;
+    uint vertexIndex = 0;
+
+    // Get ws coordinates
+    float3 ws = cubeCoordinate * lod;
+    float3 verticesCoordinates[4] = {
+        {ws.x, ws.y, ws.z}, //v0
+        {ws.x + lod, ws.y, ws.z}, //v3
+        {ws.x, ws.y, ws.z + lod}, //v4
+        {ws.x, ws.y + lod, ws.z} //v1
+    };
+    float verticesDensity[4] = {
+        points.Load(int4(cubeCoordinate.x, cubeCoordinate.y, cubeCoordinate.z, 0)),
+        points.Load(int4(cubeCoordinate.x + 1, cubeCoordinate.y, cubeCoordinate.z, 0)),
+        points.Load(int4(cubeCoordinate.x, cubeCoordinate.y, cubeCoordinate.z + 1, 0)),
+        points.Load(int4(cubeCoordinate.x, cubeCoordinate.y + 1, cubeCoordinate.z, 0)),
+    };
+
+    float3 newVertex = {-1,-1,-1};
+    int3 newVerticesIndices = {-1,-1,-1};
+
+    if(diff30 != 0){
+        // edge 3 connects vertices 0 and 3
+        newVertex = interpolateVertices(verticesDensity[0], verticesCoordinates[0], verticesDensity[1], verticesCoordinates[1]);
+        InterlockedAdd(vertexIndexCounter[0], 1, vertexIndex);
+        vertexBuffer[vertexIndex] = newVertex + offset.xyz;
+        normalBuffer[vertexIndex] = CalculateNormal(newVertex);
+        newVerticesIndices.x = vertexIndex;
+    }
+
+    if(diff10 != 0){
+        // edge 0 connects vertices 0 and 1
+        newVertex = interpolateVertices(verticesDensity[0], verticesCoordinates[0], verticesDensity[3], verticesCoordinates[3]);
+        InterlockedAdd(vertexIndexCounter[0], 1, vertexIndex);
+        vertexBuffer[vertexIndex] = newVertex  + offset.xyz;
+        normalBuffer[vertexIndex] = CalculateNormal(newVertex);
+        newVerticesIndices.y = vertexIndex;
+    }
+
+    if(diff40 != 0){
+        // edge 8 connects vertices 0 and 4
+        newVertex = interpolateVertices(verticesDensity[0], verticesCoordinates[0], verticesDensity[2], verticesCoordinates[2]);
+        InterlockedAdd(vertexIndexCounter[0], 1, vertexIndex);
+        vertexBuffer[vertexIndex] = newVertex  + offset.xyz;
+        normalBuffer[vertexIndex] = CalculateNormal(newVertex);
+        newVerticesIndices.z = vertexIndex;
+    }
+
+    vertexIndexVol[cubeCoordinate.xyz] = newVerticesIndices;
+}
+
+[numthreads(512,1,1)]
+void GenTriangles (int3 id : SV_DispatchThreadID) {
+    if (id.x >= casesCount[0]){
+        return;
+    }
+
+    // cubeCase = 8x 8z 8y 8case
+    uint cubeCase = inCases[id.x];
+    int caseNumber = (int)(cubeCase & 0xff);
+    uint3 cubeCoordinate;
+    cubeCoordinate.x = (cubeCase >> 24) & 0xff;
+    cubeCoordinate.y = (cubeCase >> 16) & 0xff;
+    cubeCoordinate.z = (cubeCase >> 8) & 0xff;
+    
+    // Check if voxel is near the ending edges, where no triangles will be created. = 0 if on last, 1 if not
+    int isOnLastPosition = checkIfDifferent(cubeCoordinate.x, gridSize - 1) * checkIfDifferent(cubeCoordinate.y, gridSize - 1) * checkIfDifferent(cubeCoordinate.z, gridSize - 1);
+    int numTriangles = case_to_numpolys[caseNumber] * isOnLastPosition;
+    int currentIndex = 0;
+
+    for(int i = 0; i < numTriangles; i++){
+        int triIndices[] = {-1,-1,-1};
+        for(int j = 0; j < 3; j++){
+            // Get the edge where the created vertex is
+            // Check where in the 3d texture for index look up the edge is
+            // Grab that voxel offset and which component in the texture corresponds to the current edge
+            int edge = triangulation[caseNumber][3*i + j];
+            uint3 cubeOffset = edge_to_cell[edge].xyz;
+            uint sampleComponent = edge_to_cell[edge].w;
+            uint3 sampleCoordinate = cubeCoordinate + cubeOffset;
+
+            uint vertexIndex = indexVol.Load(int4(sampleCoordinate, 0))[sampleComponent];
+            triIndices[j] = vertexIndex;
+        }
+
+        // if(triIndices[0] >= 0 && triIndices[1] >= 0 && triIndices[2] >= 0){
+        InterlockedAdd(currentIndexCounter[0], 3, currentIndex);
+        triangles[currentIndex] = triIndices[2];
+        currentIndex++;
+        triangles[currentIndex] = triIndices[1];
+        currentIndex++;
+        triangles[currentIndex] = triIndices[0];
+        currentIndex++;
+        // }
+    }
+}

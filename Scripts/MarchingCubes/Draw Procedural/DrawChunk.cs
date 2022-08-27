@@ -24,27 +24,35 @@ public class DrawChunk : MonoBehaviour {
 
     RenderTexture vertexIndexVol;
 
-    public const int chunkSize = 205;
-    public const float chunkScale = 1f;
-    public float surfaceLevel;
-    public Vector2[] noiseParameters;
-    public Vector2 chunkOffset;
+    private int chunkSize;
+    private float chunkScale;
+    private float surfaceLevel;
+    private Vector2[] noiseParameters;
+    private Vector2 chunkOffset;
     public int lod = 1;
+    public Vector2 chunkID;
 
-    public Material material;
+    public Material baseMaterial;
+    private Material material;
     Bounds bounds;
     int triangleCount = 0;
 
 
     void Start() {
+        chunkSize = TerrainData.chunkSize + 2;
+    	chunkScale = TerrainData.scale;
+        surfaceLevel = TerrainData.surfaceLevel;
+        noiseParameters = TerrainData.noiseParameters;
+        
         int relativeChunkSize = Mathf.CeilToInt((float) chunkSize / lod);
         int pointCount = relativeChunkSize * relativeChunkSize * relativeChunkSize;
 
-        RenderTexture densityTexture = CreateTextureBuffer(relativeChunkSize);
-        GenerateMapDensity(Vector2.zero + chunkOffset, lod, relativeChunkSize, densityTexture);
+        RenderTexture densityTexture = CreateTextureBuffer(relativeChunkSize+1);
+        GenerateMapDensity(chunkOffset, lod, relativeChunkSize+2, densityTexture);
 
         DispatchMarchingCubesShader(densityTexture, relativeChunkSize);
 
+    	material = new Material(baseMaterial);
         material.SetBuffer("vertices", vertexBuffer);
         material.SetBuffer("triangles", trianglesBuffer);
         material.SetBuffer("normals", normalBuffer);
@@ -52,21 +60,25 @@ public class DrawChunk : MonoBehaviour {
         float halfSize = chunkSize/2;
         Vector3 boundsCenter = new Vector3(chunkOffset.x + halfSize, halfSize, chunkOffset.y + halfSize);
         bounds = new Bounds(boundsCenter, new Vector3(chunkSize, chunkSize, chunkSize));
-        
-        Debug.Log(triangleCount);
     }
 
     void Update(){
         Graphics.DrawProcedural(material, bounds, MeshTopology.Triangles, triangleCount);
     }
 
-    void OnDestroy(){
+    void OnDisable(){
         ReleaseBuffers();
+    }
+
+    public void Initialize(Vector2 _offset, Vector2 _id, int _lod){
+        chunkOffset = _offset;
+        chunkID = _id;
+        lod = _lod;
     }
 
     void GenerateMapDensity(Vector2 center, int lod, int chunkSize, RenderTexture mapData){
         DensityGenerator densityGenerator = new DensityGenerator();
-        densityGenerator.GenerateMapDensityTexture(mapData, chunkSize, chunkScale, lod, biomeDensityData, center, DensityNoiseTextureShader, new Vector4(0,0,-128.39f,0));
+        densityGenerator.GenerateMapDensityTexture(mapData, chunkSize, chunkScale, lod, biomeDensityData, new Vector3(center.x, 0, center.y), DensityNoiseTextureShader, new Vector4(0,0,-128.39f,0));
     }
 
     void DispatchMarchingCubesShader(RenderTexture mapDensity, int meshSize){
@@ -81,6 +93,7 @@ public class DrawChunk : MonoBehaviour {
         cs.SetInt("gridSize", meshSize);
         cs.SetInt("lod", lod);
         cs.SetFloat("surfaceLevel", surfaceLevel);
+        cs.SetVector("offset", new Vector3(chunkOffset.x, 0, chunkOffset.y));
 
         // Setting buffers for the list cases kernel
         cases.SetCounterValue(0);
@@ -130,15 +143,10 @@ public class DrawChunk : MonoBehaviour {
         cs.SetBuffer(triangles_kernel, "currentIndexCounter", currentIndexCounter);
         cs.SetBuffer(triangles_kernel, "triangles", trianglesBuffer);
 
-        // Dispatching last buffer
-        cs.Dispatch(triangles_kernel, threadGroups, 1, 1);
-
         triangleCount = (int) (3 * triCount[0]);
 
-        // Vector3[] vertices = new Vector3[vertCount[0]];
-        // int[] triangles = new int[triCount[0] * 3];
-        // trianglesBuffer.GetData(triangles);
-        // vertexBuffer.GetData(vertices);
+        // Dispatching last buffer
+        cs.Dispatch(triangles_kernel, threadGroups, 1, 1);
     }
 
     void CreateBuffers(int meshSize){
@@ -164,7 +172,7 @@ public class DrawChunk : MonoBehaviour {
     }
 
     RenderTexture CreateTextureBuffer(int meshSize){
-        RenderTexture tex = new RenderTexture(meshSize+1, meshSize+1, 0, RenderTextureFormat.ARGBInt);
+        RenderTexture tex = new RenderTexture(meshSize+1, meshSize+1, 0, RenderTextureFormat.ARGBFloat);
         tex.enableRandomWrite = true;
         tex.dimension = TextureDimension.Tex3D;
         tex.volumeDepth = meshSize+1;
