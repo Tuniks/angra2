@@ -27,22 +27,20 @@ public class DrawChunk : MonoBehaviour {
     private int chunkSize;
     private float chunkScale;
     private float surfaceLevel;
-    private Vector2[] noiseParameters;
-    private Vector2 chunkOffset;
     public int lod = 1;
-    public Vector2 chunkID;
+    private Vector3 chunkOffset;
+    public Vector3 chunkID;
 
     public Material baseMaterial;
     private Material material;
-    Bounds bounds;
-    int triangleCount = 0;
+    public Bounds bounds;
+    private int triangleCount = 0;
 
 
     void Start() {
         chunkSize = TerrainData.chunkSize + 2;
     	chunkScale = TerrainData.scale;
         surfaceLevel = TerrainData.surfaceLevel;
-        noiseParameters = TerrainData.noiseParameters;
         
         int relativeChunkSize = Mathf.CeilToInt((float) chunkSize / lod);
         int pointCount = relativeChunkSize * relativeChunkSize * relativeChunkSize;
@@ -58,7 +56,7 @@ public class DrawChunk : MonoBehaviour {
         material.SetBuffer("normals", normalBuffer);
 
         float halfSize = chunkSize/2;
-        Vector3 boundsCenter = new Vector3(chunkOffset.x + halfSize, halfSize, chunkOffset.y + halfSize);
+        Vector3 boundsCenter = new Vector3(chunkOffset.x + halfSize, chunkOffset.y + halfSize, chunkOffset.z + halfSize);
         bounds = new Bounds(boundsCenter, new Vector3(chunkSize, chunkSize, chunkSize));
     }
 
@@ -70,15 +68,21 @@ public class DrawChunk : MonoBehaviour {
         ReleaseBuffers();
     }
 
-    public void Initialize(Vector2 _offset, Vector2 _id, int _lod){
+    public void Initialize(Vector3 _offset, Vector3 _id, int _lod){
         chunkOffset = _offset;
         chunkID = _id;
         lod = _lod;
+
+        if(_offset.y != 0){
+            transform.GetChild(0).gameObject.SetActive(false);
+        }
     }
 
-    void GenerateMapDensity(Vector2 center, int lod, int chunkSize, RenderTexture mapData){
+    void GenerateMapDensity(Vector3 center, int lod, int chunkSize, RenderTexture mapData){
         DensityGenerator densityGenerator = new DensityGenerator();
-        densityGenerator.GenerateMapDensityTexture(mapData, chunkSize, chunkScale, lod, biomeDensityData, new Vector3(center.x, 0, center.y), DensityNoiseTextureShader, new Vector4(0,0,-128.39f,0));
+        // Vector3 offsetCenter = center - Vector3.one;
+        Vector3 offsetCenter = center;
+        densityGenerator.GenerateMapDensityTexture(mapData, chunkSize, chunkScale, lod, biomeDensityData, offsetCenter, DensityNoiseTextureShader);
     }
 
     void DispatchMarchingCubesShader(RenderTexture mapDensity, int meshSize){
@@ -93,7 +97,7 @@ public class DrawChunk : MonoBehaviour {
         cs.SetInt("gridSize", meshSize);
         cs.SetInt("lod", lod);
         cs.SetFloat("surfaceLevel", surfaceLevel);
-        cs.SetVector("offset", new Vector3(chunkOffset.x, 0, chunkOffset.y));
+        cs.SetVector("offset", chunkOffset);
 
         // Setting buffers for the list cases kernel
         cases.SetCounterValue(0);
@@ -112,6 +116,13 @@ public class DrawChunk : MonoBehaviour {
         vertexCounter.GetData(vertCount);
         ComputeBuffer.CopyCount(cases, casesCounter, 0);
         casesCounter.GetData(caseCount);
+
+        // If there are no cases in the chunk, quit
+        if(triCount[0] == 0){
+            mapDensity.Release();
+            EarlyExit();
+            return;
+        }
 
         // Allocating new buffers and releasing old ones
         triangleCounter.Release();
@@ -182,13 +193,20 @@ public class DrawChunk : MonoBehaviour {
 
     void ReleaseBuffers(){
         cases.Release();
-        trianglesBuffer.Release();
         casesCounter.Release();
         vertexIndexCounter.Release();
         currentIndexCounter.Release();
         vertexIndexVol.Release();
-        vertexBuffer.Release();
-        normalBuffer.Release();
+        if(trianglesBuffer != null){
+            trianglesBuffer.Release();
+            vertexBuffer.Release();
+            normalBuffer.Release();
+        }
     }
     
+    void EarlyExit(){
+        triangleCounter.Release();
+        vertexCounter.Release();
+        this.gameObject.SetActive(false);
+    }
 }

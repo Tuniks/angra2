@@ -15,5 +15,7 @@ public static class TerrainData{
         new Vector2(0.0047f, 68),
         new Vector2(0.0022f, 123)
     };
+    
+    public static Vector4 function = new Vector4(0,0,-128.39f,0);
 
 }

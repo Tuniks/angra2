@@ -73,9 +73,12 @@ float3 CalculateNormal(float3 pos){
 
 [numthreads(8,8,8)]
 void ListCases (int3 id : SV_DispatchThreadID) {
-    if (id.x > gridSize - 1 || id.y > gridSize-1 || id.z > gridSize - 1){
+    if (id.x > gridSize - 1 || id.y > gridSize - 1 || id.z > gridSize - 1){
         return;
     }
+
+    // Offset start to take padding (used for normal calculation) into account
+    // id = id + int3(1,1,1);
 
     float cubeVertices[8] = {
         points.Load(int4(id.x, id.y, id.z, 0)),

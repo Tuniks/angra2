@@ -12,6 +12,7 @@ public class ChunkManager : MonoBehaviour{
     public Vector2[] detailLevels;
     private int chunkSize;
     private float chunkScale;
+    private const int verticalChunks = 2;
     
     private int chunksVisibleInViewDistance;
     private float maxViewDistance;
@@ -22,7 +23,7 @@ public class ChunkManager : MonoBehaviour{
     private const float viewerMoveThresholdForChunkUpdate = 10f;
     private const float sqrViewerMoveThresholdForChunkUpdate = viewerMoveThresholdForChunkUpdate * viewerMoveThresholdForChunkUpdate;
 
-    Dictionary<Vector2, DrawChunk> chunkDictionary = new Dictionary<Vector2, DrawChunk>();
+    Dictionary<Vector2, DrawChunk[]> chunkDictionary = new Dictionary<Vector2, DrawChunk[]>();
 
     void Start() {
         chunkSize = TerrainData.chunkSize;
@@ -53,20 +54,11 @@ public class ChunkManager : MonoBehaviour{
     }
 
     void UpdateVisibleChunks() {
-        foreach(KeyValuePair<Vector2, DrawChunk> c in chunkDictionary.ToList()){
+        foreach(KeyValuePair<Vector2, DrawChunk[]> c in chunkDictionary.ToList()){
             if(SqrPlayerDistanceFromCenter(c.Key) > sqrViewDistance){
-                RemoveChunk(c.Key);
+                RemoveChunks(c.Key);
             }
         }
-
-        // for (int i = chunks.Count - 1; i >= 0; i--) {
-        //     DrawChunk chunk = chunks[i];
-        //     float sqrDist = SqrPlayerDistanceFromCenter(chunk.chunkID);
-        //     if(sqrDist > sqrViewDistance){
-        //         chunkDictionary.Remove(chunk.chunkID);
-        //         chunks.RemoveAt(i);
-        //     }
-        // }
 
         int currentChunkCoordX = Mathf.RoundToInt(viewerPosition.x / chunkSize);
         int currentChunkCoordY = Mathf.RoundToInt(viewerPosition.y / chunkSize);
@@ -82,37 +74,47 @@ public class ChunkManager : MonoBehaviour{
                     bool insideBounds = GeometryUtility.TestPlanesAABB(planes, bound);
                     if((sqrDist < sqrViewDistance) && insideBounds) {
                         int currentLOD = GetLODFromID(chunkID);
-                        CreateChunk(chunkID, currentLOD);
+                        CreateChunks(chunkID, currentLOD);
                     }
-                }
-                 else {
-                    DrawChunk chunk = chunkDictionary[chunkID];
+                } else {
+                    DrawChunk chunk = chunkDictionary[chunkID][0];
                     int updatedLOD = GetLODFromID(chunkID); 
                     if (chunk.lod != updatedLOD){
-                        RemoveChunk(chunkID);
-                        CreateChunk(chunkID, updatedLOD);
+                        RemoveChunks(chunkID);
+                        CreateChunks(chunkID, updatedLOD);
                     } 
                 }
             }
         }
     }
 
-    void CreateChunk(Vector2 id, int lod){
-        Vector3 pos = new Vector3(id.x, 0, id.y) * chunkSize;
+    void CreateChunks(Vector2 id, int lod){
+        DrawChunk[] chunks = new DrawChunk[verticalChunks];
+
+        for(int i = 0; i < verticalChunks; i++){
+            chunks[i] = CreateChunk(new Vector3(id.x, i, id.y), lod);
+        }
+    
+        chunkDictionary.Add(id, chunks);
+    }
+
+    DrawChunk CreateChunk(Vector3 id, int lod){
+        Vector3 pos = id * chunkSize;
         GameObject chunkObject = Instantiate(chunkPrefab, pos, Quaternion.identity);
         chunkObject.name = id.ToString();
         DrawChunk chunk = chunkObject.GetComponent<DrawChunk>();
         chunk.Initialize(id * (chunkSize+1), id, lod);
 
-        chunkDictionary.Add(id, chunk);
+        return chunk;
     }
 
-    void RemoveChunk(Vector2 id){
+    void RemoveChunks(Vector2 id){
         if(!chunkDictionary.ContainsKey(id)) return;
 
-        DrawChunk chunk = chunkDictionary[id];
-
-        Destroy(chunk.gameObject);
+        DrawChunk[] chunks = chunkDictionary[id];
+        foreach(DrawChunk c in chunks){
+            Destroy(c.gameObject);
+        }
         chunkDictionary.Remove(id);
     }
 

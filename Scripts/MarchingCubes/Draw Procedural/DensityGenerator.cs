@@ -9,6 +9,8 @@ public class DensityGenerator {
     ComputeBuffer parametersBuffer;
     ComputeBuffer offsetsBuffer;
     private int noThreads = 8;
+    
+    Vector4 function = TerrainData.function;
 
     const int seed = 26;
 
@@ -37,7 +39,7 @@ public class DensityGenerator {
 
     // ============== DENSITY ON TEXTURE ===================
 
-    public void GenerateMapDensityTexture(RenderTexture pointsTexture, int gridSize, float gridScale, int lod, BiomeDensityData[] biomeData, Vector3 center, ComputeShader cs, Vector4 function) {
+    public void GenerateMapDensityTexture(RenderTexture pointsTexture, int gridSize, float gridScale, int lod, BiomeDensityData[] biomeData, Vector3 center, ComputeShader cs) {
         if(gridSize == 0) return;
 
         DensityNoiseShader = cs;
