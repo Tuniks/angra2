@@ -38,14 +38,14 @@ public class DrawChunk : MonoBehaviour {
 
 
     void Start() {
-        chunkSize = TerrainData.chunkSize + 2;
+        chunkSize = TerrainData.chunkSize + 4;
     	chunkScale = TerrainData.scale;
         surfaceLevel = TerrainData.surfaceLevel;
         
         int relativeChunkSize = Mathf.CeilToInt((float) chunkSize / lod);
         int pointCount = relativeChunkSize * relativeChunkSize * relativeChunkSize;
 
-        RenderTexture densityTexture = CreateTextureBuffer(relativeChunkSize+1);
+        RenderTexture densityTexture = CreateTextureBuffer(relativeChunkSize+2);
         GenerateMapDensity(chunkOffset, lod, relativeChunkSize+2, densityTexture);
 
         DispatchMarchingCubesShader(densityTexture, relativeChunkSize);
@@ -80,7 +80,6 @@ public class DrawChunk : MonoBehaviour {
 
     void GenerateMapDensity(Vector3 center, int lod, int chunkSize, RenderTexture mapData){
         DensityGenerator densityGenerator = new DensityGenerator();
-        // Vector3 offsetCenter = center - Vector3.one;
         Vector3 offsetCenter = center;
         densityGenerator.GenerateMapDensityTexture(mapData, chunkSize, chunkScale, lod, biomeDensityData, offsetCenter, DensityNoiseTextureShader);
     }

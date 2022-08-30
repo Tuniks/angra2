@@ -67,7 +67,8 @@ public class DensityGenerator {
         DensityNoiseShader.SetInt("octaves", octaves);
         DensityNoiseShader.SetInt("lod", lod);
         DensityNoiseShader.SetFloat("gridScale", gridScale);
-        DensityNoiseShader.SetVector("center", center);
+        // Decrease one from the center to get a padded density texture to help w/ normal calculation
+        DensityNoiseShader.SetVector("center", center - Vector3.one);
         DensityNoiseShader.SetVector("function", function);
 
         //Dispatching the baby
