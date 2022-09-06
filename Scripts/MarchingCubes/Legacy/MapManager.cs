@@ -23,7 +23,7 @@ public class MapManager : MonoBehaviour {
     public void GenerateMapDataTexture(Vector2 center, int lod, int chunkSize, RenderTexture mapData) {
         Vector3 center3d = new Vector3(center.x, 0, center.y);
         DensityGenerator densityGenerator = new DensityGenerator();
-        densityGenerator.GenerateMapDensityTexture(mapData, chunkSize, gridScale, lod, biomeDensityData, center3d, DensityNoiseTextureShader);
+        densityGenerator.GenerateMapDensityTexture(mapData, chunkSize, gridScale, lod, biomeDensityData, center3d, null, DensityNoiseTextureShader);
     }
 
     public RenderTexture CreateTextureBuffer(int meshSize){
@@ -55,6 +55,6 @@ public class MapManager : MonoBehaviour {
     // ================ 3D CHUNK EXP ============
     public void GenerateMapDataTextureFrom3DOrigin(Vector3 center, int lod, int chunkSize, RenderTexture mapData) {
         DensityGenerator densityGenerator = new DensityGenerator();
-        densityGenerator.GenerateMapDensityTexture(mapData, chunkSize, gridScale, lod, biomeDensityData, center, DensityNoiseTextureShader);
+        densityGenerator.GenerateMapDensityTexture(mapData, chunkSize, gridScale, lod, biomeDensityData, center, null, DensityNoiseTextureShader);
     }
 }

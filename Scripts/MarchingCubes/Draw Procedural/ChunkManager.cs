@@ -60,8 +60,8 @@ public class ChunkManager : MonoBehaviour{
             }
         }
 
-        int currentChunkCoordX = Mathf.RoundToInt(viewerPosition.x / chunkSize);
-        int currentChunkCoordY = Mathf.RoundToInt(viewerPosition.y / chunkSize);
+        int currentChunkCoordX = Mathf.FloorToInt(viewerPosition.x / chunkSize);
+        int currentChunkCoordY = Mathf.FloorToInt(viewerPosition.y / chunkSize);
 
         planes = GeometryUtility.CalculateFrustumPlanes(cam);
 
@@ -101,7 +101,8 @@ public class ChunkManager : MonoBehaviour{
     DrawChunk CreateChunk(Vector3 id, int lod){
         Vector3 pos = id * chunkSize;
         GameObject chunkObject = Instantiate(chunkPrefab, pos, Quaternion.identity);
-        chunkObject.name = id.ToString();
+        chunkObject.name = id.ToString(); 
+        chunkObject.transform.parent = this.gameObject.transform;
         DrawChunk chunk = chunkObject.GetComponent<DrawChunk>();
         chunk.Initialize(id * (chunkSize+1), id, lod);
 
@@ -144,5 +145,18 @@ public class ChunkManager : MonoBehaviour{
         Vector3 lengths = new Vector3(1, verticalChunks/2, 1) * chunkSize *  chunkScale;
  
         return new Bounds(pos3d, lengths);
+    }
+
+    public void RedrawChunksInRange(Vector3 pos, float range){
+        Vector2 centerID = GetIDFromPosition(new Vector2(pos.x, pos.z));
+        int currentLOD = GetLODFromID(centerID);
+        
+        Debug.Log(centerID);
+        RemoveChunks(centerID);
+        CreateChunks(centerID, currentLOD);
+    }
+
+    Vector2 GetIDFromPosition(Vector2 pos){
+        return new Vector2(Mathf.FloorToInt(pos.x / chunkSize), Mathf.FloorToInt(pos.y / chunkSize));
     }
 }

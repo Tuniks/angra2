@@ -15,6 +15,10 @@ float3 center;
 int octaves;
 int lod;
 float4 function;
+// Terraforming Data
+StructuredBuffer<float3> terraformingPoints;
+float sqrPointSize;
+int pointCount;
 
 int indexFromCoord(int x, int y, int z) {
     return z * gridSize * gridSize + y * gridSize + x;
@@ -30,6 +34,19 @@ float2 getEndOfBiomeMultiplier(float2 biomeWs){
 
 float2 getStartOfBiomeMultiplier(float2 biomeWs){
     return saturate(biomeWs/204);
+}
+
+float getTerraformingPoints(float3 ws){
+    float density = 0;
+    
+    for(int t = 0; t < pointCount; t++){
+        float3 comp = ws - terraformingPoints[t];
+        comp *= comp;
+        float isInside = step(comp.x + comp.y + comp.z, sqrPointSize);
+        density += isInside * 600;
+    }
+
+    return density;
 }
 
 [numthreads(8,8,8)]
@@ -80,20 +97,19 @@ void IslandDensity (int3 id : SV_DispatchThreadID) {
     density += saturate((hardFloor - ws.y)) * 15;
     density += 50;
 
+    // Adding terraforming points
+    density += getTerraformingPoints(ws);
+
     // ground floor, must always be present to avoid inexistent mesh at the bottom
     float absoluteFloor = saturate((7 - ws.y)) * 600;
     float absoluteCeiling = saturate(ws.y - 305) * -600;
 
     // 1st and 9th chunk starts to taper density down, 10th chunk is empty for change in biome
-    // float2 biomeWs = abs((ws.xz) % (204 * 11));
-    // float2 endOfBiomeMultiplier = saturate((204*9 - biomeWs)/204 + 1);
-    // float2 startOfBiomeMultiplier = saturate(biomeWs/204);
     float2 biomeWs = getBiomeWs(ws.xz);
     float2 endOfBiomeMultiplier = getEndOfBiomeMultiplier(biomeWs);
     float2 startOfBiomeMultiplier = getStartOfBiomeMultiplier(biomeWs);
 
     points[id.xyz] = density * endOfBiomeMultiplier.x * startOfBiomeMultiplier.x * endOfBiomeMultiplier.y * startOfBiomeMultiplier.y + absoluteFloor + absoluteCeiling;
-    // points[id.xyz] = density;
 }
 
 [numthreads(8,8,8)]
@@ -122,6 +138,9 @@ void DunesDensity (int3 id : SV_DispatchThreadID) {
 
     density -= 0.7 * ws.y;
     density += 130;
+
+    // Adding terraforming points
+    density += getTerraformingPoints(ws);
 
     // ground floor, must always be present to avoid inexistent mesh at the bottom
     float absoluteFloor = saturate((7 - ws.y)) * 600;
@@ -167,6 +186,9 @@ void MountainsDensity (int3 id : SV_DispatchThreadID) {
 
     density += -ws.y * 0.7;
     density += 65;
+
+    // Adding terraforming points
+    density += getTerraformingPoints(ws);
 
     // ground floor, must always be present to avoid inexistent mesh at the bottom
     float absoluteFloor = saturate((7 - ws.y)) * 600;
@@ -222,6 +244,9 @@ void RockOceanDensity (int3 id : SV_DispatchThreadID) {
 
     // density += saturate((hardFloor - ws.y)) * 15;
     density += 30;
+
+    // Adding terraforming points
+    density += getTerraformingPoints(ws);
 
     // ground floor, must always be present to avoid inexistent mesh at the bottom
     float absoluteFloor = saturate((7 - ws.y)) * 600;

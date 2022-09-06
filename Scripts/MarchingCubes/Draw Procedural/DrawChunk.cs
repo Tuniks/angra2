@@ -7,7 +7,8 @@ public class DrawChunk : MonoBehaviour {
     public ComputeShader cs;
     public ComputeShader DensityNoiseTextureShader;
     public BiomeDensityData[] biomeDensityData;
-    
+    private Terraformer terraformer;
+
     private int noThreadsCases = 8;
     private int noThreadsVertex = 512;
 
@@ -31,8 +32,9 @@ public class DrawChunk : MonoBehaviour {
     private Vector3 chunkOffset;
     public Vector3 chunkID;
 
-    public Material baseMaterial;
+    public Material[] materials;
     private Material material;
+    private int biomeID = 0;
     public Bounds bounds;
     private int triangleCount = 0;
 
@@ -50,7 +52,7 @@ public class DrawChunk : MonoBehaviour {
 
         DispatchMarchingCubesShader(densityTexture, relativeChunkSize);
 
-    	material = new Material(baseMaterial);
+    	material = GetMaterial();
         material.SetBuffer("vertices", vertexBuffer);
         material.SetBuffer("triangles", trianglesBuffer);
         material.SetBuffer("normals", normalBuffer);
@@ -72,6 +74,7 @@ public class DrawChunk : MonoBehaviour {
         chunkOffset = _offset;
         chunkID = _id;
         lod = _lod;
+        terraformer = GetComponentInParent<Terraformer>();
 
         if(_offset.y != 0){
             transform.GetChild(0).gameObject.SetActive(false);
@@ -80,8 +83,8 @@ public class DrawChunk : MonoBehaviour {
 
     void GenerateMapDensity(Vector3 center, int lod, int chunkSize, RenderTexture mapData){
         DensityGenerator densityGenerator = new DensityGenerator();
-        Vector3 offsetCenter = center;
-        densityGenerator.GenerateMapDensityTexture(mapData, chunkSize, chunkScale, lod, biomeDensityData, offsetCenter, DensityNoiseTextureShader);
+        biomeID = densityGenerator.GetBiomeKernel(new Vector2(center.x, center.z));
+        densityGenerator.GenerateMapDensityTexture(mapData, chunkSize, chunkScale, lod, biomeDensityData, center, terraformer, DensityNoiseTextureShader);
     }
 
     void DispatchMarchingCubesShader(RenderTexture mapDensity, int meshSize){
@@ -207,5 +210,9 @@ public class DrawChunk : MonoBehaviour {
         triangleCounter.Release();
         vertexCounter.Release();
         this.gameObject.SetActive(false);
+    }
+
+    Material GetMaterial(){
+        return new Material(materials[biomeID]);
     }
 }

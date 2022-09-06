@@ -1,6 +1,6 @@
 %YAML 1.1
 %TAG !u! tag:unity3d.com,2011:
---- !u!114 &-1658857957153972799
+--- !u!114 &-2586331300862056952
 MonoBehaviour:
   m_ObjectHideFlags: 11
   m_CorrespondingSourceObject: {fileID: 0}
@@ -20,8 +20,8 @@ Material:
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_Name: Graph Proc Terrain
-  m_Shader: {fileID: -6465566751694194690, guid: 00be39a82bae8b7458ccf4818086c3d3,
+  m_Name: Dunes
+  m_Shader: {fileID: -6465566751694194690, guid: d798d93067b8ebb45888908e0a715359,
     type: 3}
   m_Parent: {fileID: 0}
   m_ModifiedSerializedProperties: 0
@@ -43,10 +43,6 @@ Material:
         m_Offset: {x: 0, y: 0}
     - Texture2D_73441ea0f98b41d1bc321d320629f2fe:
         m_Texture: {fileID: 2800000, guid: 17e276b92256ff54382b44aff129b8ee, type: 3}
-        m_Scale: {x: 1, y: 1}
-        m_Offset: {x: 0, y: 0}
-    - Texture2D_fb56499e239d4cc78a5e3253dd7ca238:
-        m_Texture: {fileID: 2800000, guid: 70299dbaa031bb5489d99b9359e12c5b, type: 3}
         m_Scale: {x: 1, y: 1}
         m_Offset: {x: 0, y: 0}
     - Texture2D_ffbdd731ce2945d4a741d4d523751feb:
@@ -112,9 +108,7 @@ Material:
     m_Ints: []
     m_Floats:
     - Vector1_2dd922d92b264e128f98680069ce062a: 205
-    - Vector1_9fe2912f4f014be9acd815ff7b734af4: 0.9
     - Vector1_a7ccd46dbf32419a986b4ed10962bd25: 0
-    - Vector1_e342973db3d446ee82b56b8270d50d30: 25
     - _AlphaClip: 0
     - _Blend: 0
     - _BlendModePreserveSpecular: 1
@@ -146,7 +140,6 @@ Material:
     - _WorkflowMode: 1
     - _ZWrite: 1
     m_Colors:
-    - Vector3_156c128731e64e6bac2559de1d9f9c60: {r: 0, g: 1.56, b: 0, a: 0}
     - _BaseColor: {r: 1, g: 1, b: 1, a: 1}
     - _Color: {r: 1, g: 1, b: 1, a: 1}
     - _EmissionColor: {r: 0, g: 0, b: 0, a: 1}
