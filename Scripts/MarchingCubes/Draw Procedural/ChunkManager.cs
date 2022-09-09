@@ -147,13 +147,33 @@ public class ChunkManager : MonoBehaviour{
         return new Bounds(pos3d, lengths);
     }
 
-    public void RedrawChunksInRange(Vector3 pos, float range){
+    public Vector2[] GetChunksInRange(Vector3 pos, float range){
+        List<Vector2> neighbors = new List<Vector2>();
         Vector2 centerID = GetIDFromPosition(new Vector2(pos.x, pos.z));
-        int currentLOD = GetLODFromID(centerID);
+        neighbors.Add(new Vector2(0,0));
+
+        Vector2 forwardID = GetIDFromPosition(new Vector2(pos.x + range, pos.z + range));
+        Vector2 backwardID = GetIDFromPosition(new Vector2(pos.x - range, pos.z - range));
         
-        Debug.Log(centerID);
-        RemoveChunks(centerID);
-        CreateChunks(centerID, currentLOD);
+        if(centerID.x != forwardID.x) neighbors.Add(new Vector2(1,0));
+        if(centerID.y != forwardID.y) neighbors.Add(new Vector2(0,1));
+        if(centerID.x != backwardID.x) neighbors.Add(new Vector2(-1,0));
+        if(centerID.y != backwardID.y) neighbors.Add(new Vector2(0,-1));
+        if(neighbors.Count > 2) neighbors.Add(neighbors[1] + neighbors[2]);
+
+        Vector2[] idsInRange = new Vector2[neighbors.Count];
+        for(int i = 0; i < neighbors.Count; i++){
+            idsInRange[i] = centerID + neighbors[i];
+        }
+        return idsInRange;
+    }
+
+    public void RedrawChunksInRange(Vector2[] range){
+        int lod = (int) detailLevels[0].x;
+        foreach(Vector2 id in range){
+            RemoveChunks(id);
+            CreateChunks(id, lod);
+        }
     }
 
     Vector2 GetIDFromPosition(Vector2 pos){

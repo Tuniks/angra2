@@ -5,15 +5,23 @@ using UnityEngine;
 public class Terraformer : MonoBehaviour{
     [SerializeField] ChunkManager chunkManager;
 
-    private List<Vector3> densityPoints = new List<Vector3>();
+    private Dictionary<Vector2, List<Vector3>> pointsByChunkID = new Dictionary<Vector2, List<Vector3>>();
     public float pointSize = 1f;
 
     public void AddDensityPoint(Vector3 pos){
-        densityPoints.Add(pos);
-        chunkManager.RedrawChunksInRange(pos, pointSize);
+        Vector2[] range = chunkManager.GetChunksInRange(pos, pointSize);
+        
+        foreach (Vector2 r in range){
+            if(!pointsByChunkID.ContainsKey(r)) pointsByChunkID[r] = new List<Vector3>();
+            pointsByChunkID[r].Add(pos);
+        }
+
+        chunkManager.RedrawChunksInRange(range);
     }
 
-    public Vector3[] GetDensityPoints(){
-        return densityPoints.ToArray();
+    public Vector3[] GetDensityPoints(Vector2 chunkID){
+        if(!pointsByChunkID.ContainsKey(chunkID)) return new Vector3[0];
+        
+        return pointsByChunkID[chunkID].ToArray();
     }
 }

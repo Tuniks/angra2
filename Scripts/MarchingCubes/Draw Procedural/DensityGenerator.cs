@@ -44,14 +44,14 @@ public class DensityGenerator {
 
     // ============== DENSITY ON TEXTURE ===================
 
-    public void GenerateMapDensityTexture(RenderTexture pointsTexture, int gridSize, float gridScale, int lod, BiomeDensityData[] biomeData, Vector3 center, Terraformer terraformer, ComputeShader cs) {
+    public void GenerateMapDensityTexture(RenderTexture pointsTexture, int gridSize, float gridScale, int lod, BiomeDensityData[] biomeData, Vector3 center, Terraformer terraformer, Vector2 chunkID, ComputeShader cs) {
         if(gridSize == 0) return;
 
         DensityNoiseShader = cs;
 
         Vector2[] noiseParameters = biomeData[kernelID].noiseParameters;
         int octaves = noiseParameters.Length; 
-        Vector3[] terraformerData = terraformer.GetDensityPoints();
+        Vector3[] terraformerData = terraformer.GetDensityPoints(chunkID);
 
         CreateBuffers(octaves, terraformerData.Length);
 

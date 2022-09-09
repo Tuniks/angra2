@@ -84,7 +84,8 @@ public class DrawChunk : MonoBehaviour {
     void GenerateMapDensity(Vector3 center, int lod, int chunkSize, RenderTexture mapData){
         DensityGenerator densityGenerator = new DensityGenerator();
         biomeID = densityGenerator.GetBiomeKernel(new Vector2(center.x, center.z));
-        densityGenerator.GenerateMapDensityTexture(mapData, chunkSize, chunkScale, lod, biomeDensityData, center, terraformer, DensityNoiseTextureShader);
+
+        densityGenerator.GenerateMapDensityTexture(mapData, chunkSize, chunkScale, lod, biomeDensityData, center, terraformer, new Vector2(chunkID.x, chunkID.z), DensityNoiseTextureShader);
     }
 
     void DispatchMarchingCubesShader(RenderTexture mapDensity, int meshSize){
