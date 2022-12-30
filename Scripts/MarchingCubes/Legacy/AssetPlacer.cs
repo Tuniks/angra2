@@ -20,7 +20,7 @@ public class AssetPlacer : MonoBehaviour {
     Pool assetPool;
 
     void Start(){
-        Random.InitState(seed);
+        Random.InitState(TerrainData.seed);
         assetPool = new Pool(maxInstancesNumber, asset);
     }
 

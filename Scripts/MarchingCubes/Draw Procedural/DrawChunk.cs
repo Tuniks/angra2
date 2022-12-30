@@ -43,23 +43,12 @@ public class DrawChunk : MonoBehaviour {
         chunkSize = TerrainData.chunkSize + 4;
     	chunkScale = TerrainData.scale;
         surfaceLevel = TerrainData.surfaceLevel;
-        
-        int relativeChunkSize = Mathf.CeilToInt((float) chunkSize / lod);
-        int pointCount = relativeChunkSize * relativeChunkSize * relativeChunkSize;
-
-        RenderTexture densityTexture = CreateTextureBuffer(relativeChunkSize+2);
-        GenerateMapDensity(chunkOffset, lod, relativeChunkSize+2, densityTexture);
-
-        DispatchMarchingCubesShader(densityTexture, relativeChunkSize);
-
-    	material = GetMaterial();
-        material.SetBuffer("vertices", vertexBuffer);
-        material.SetBuffer("triangles", trianglesBuffer);
-        material.SetBuffer("normals", normalBuffer);
 
         float halfSize = chunkSize/2;
         Vector3 boundsCenter = new Vector3(chunkOffset.x + halfSize, chunkOffset.y + halfSize, chunkOffset.z + halfSize);
         bounds = new Bounds(boundsCenter, new Vector3(chunkSize, chunkSize, chunkSize));
+
+        Draw();
     }
 
     void Update(){
@@ -79,6 +68,26 @@ public class DrawChunk : MonoBehaviour {
         if(_offset.y != 0){
             transform.GetChild(0).gameObject.SetActive(false);
         }
+    }
+
+    public void UpdateLOD(int newLOD){
+        lod = newLOD;
+    }
+
+    public void Draw(){
+        ReleaseBuffers();
+        int relativeChunkSize = Mathf.CeilToInt((float) chunkSize / lod);
+        int pointCount = relativeChunkSize * relativeChunkSize * relativeChunkSize;
+
+        RenderTexture densityTexture = CreateTextureBuffer(relativeChunkSize+2);
+        GenerateMapDensity(chunkOffset, lod, relativeChunkSize+2, densityTexture);
+
+        DispatchMarchingCubesShader(densityTexture, relativeChunkSize);
+
+    	material = GetMaterial();
+        material.SetBuffer("vertices", vertexBuffer);
+        material.SetBuffer("triangles", trianglesBuffer);
+        material.SetBuffer("normals", normalBuffer);
     }
 
     void GenerateMapDensity(Vector3 center, int lod, int chunkSize, RenderTexture mapData){
@@ -195,22 +204,20 @@ public class DrawChunk : MonoBehaviour {
     }
 
     void ReleaseBuffers(){
-        cases.Release();
-        casesCounter.Release();
-        vertexIndexCounter.Release();
-        currentIndexCounter.Release();
-        vertexIndexVol.Release();
-        if(trianglesBuffer != null){
-            trianglesBuffer.Release();
-            vertexBuffer.Release();
-            normalBuffer.Release();
-        }
+        if(cases != null) cases.Release();
+        if(casesCounter != null) casesCounter.Release();
+        if(vertexIndexCounter != null) vertexIndexCounter.Release();
+        if(currentIndexCounter != null) currentIndexCounter.Release();
+        if(vertexIndexVol != null) vertexIndexVol.Release();
+        if(trianglesBuffer != null) trianglesBuffer.Release();
+        if(vertexBuffer != null) vertexBuffer.Release();
+        if(normalBuffer != null) normalBuffer.Release();
     }
     
     void EarlyExit(){
         triangleCounter.Release();
         vertexCounter.Release();
-        this.gameObject.SetActive(false);
+        ReleaseBuffers();
     }
 
     Material GetMaterial(){

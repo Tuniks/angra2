@@ -55,7 +55,7 @@ public class DensityGenerator {
 
         CreateBuffers(octaves, terraformerData.Length);
 
-        Random.InitState(1996);
+        Random.InitState(TerrainData.seed);
         Vector3[] octaveOffsets = new Vector3[octaves];
         for (int i = 0; i < octaves; i++) {
             octaveOffsets[i] = new Vector3 (Random.Range(-99999,99999), Random.Range(-99999,99999), Random.Range(-99999,99999));
@@ -93,8 +93,10 @@ public class DensityGenerator {
     public int GetBiomeKernel(Vector2 center){
         // Use non relative chunksize
         Vector2 biomeCoord;
-        biomeCoord.x = Mathf.FloorToInt((center.x) / (204 * 10f));
-        biomeCoord.y = Mathf.FloorToInt((center.y) / (204 * 10f));
+        Random.InitState(TerrainData.seed);
+
+        biomeCoord.x = Mathf.FloorToInt((center.x) / (204 * 10f)) + Random.Range(-100,100);
+        biomeCoord.y = Mathf.FloorToInt((center.y) / (204 * 10f)) + Random.Range(-100,100);
 
         float centerValue = WhiteNoise.GetWhiteNoise(biomeCoord);
         float stepSize = 1f/biomes.Count;

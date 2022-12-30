@@ -98,7 +98,7 @@ void IslandDensity (int3 id : SV_DispatchThreadID) {
     density += 50;
 
     // Adding terraforming points
-    density += getTerraformingPoints(ws);
+    float terra = getTerraformingPoints(ws);
 
     // ground floor, must always be present to avoid inexistent mesh at the bottom
     float absoluteFloor = saturate((7 - ws.y)) * 600;
@@ -109,7 +109,7 @@ void IslandDensity (int3 id : SV_DispatchThreadID) {
     float2 endOfBiomeMultiplier = getEndOfBiomeMultiplier(biomeWs);
     float2 startOfBiomeMultiplier = getStartOfBiomeMultiplier(biomeWs);
 
-    points[id.xyz] = density * endOfBiomeMultiplier.x * startOfBiomeMultiplier.x * endOfBiomeMultiplier.y * startOfBiomeMultiplier.y + absoluteFloor + absoluteCeiling;
+    points[id.xyz] = density * endOfBiomeMultiplier.x * startOfBiomeMultiplier.x * endOfBiomeMultiplier.y * startOfBiomeMultiplier.y + absoluteFloor + absoluteCeiling + terra;
 }
 
 [numthreads(8,8,8)]
@@ -140,7 +140,7 @@ void DunesDensity (int3 id : SV_DispatchThreadID) {
     density += 130;
 
     // Adding terraforming points
-    density += getTerraformingPoints(ws);
+    float terra = getTerraformingPoints(ws);
 
     // ground floor, must always be present to avoid inexistent mesh at the bottom
     float absoluteFloor = saturate((7 - ws.y)) * 600;
@@ -151,7 +151,7 @@ void DunesDensity (int3 id : SV_DispatchThreadID) {
     float2 endOfBiomeMultiplier = getEndOfBiomeMultiplier(biomeWs);
     float2 startOfBiomeMultiplier = getStartOfBiomeMultiplier(biomeWs);
 
-    points[id.xyz] = density * endOfBiomeMultiplier.x * startOfBiomeMultiplier.x * endOfBiomeMultiplier.y * startOfBiomeMultiplier.y + absoluteFloor + absoluteCeiling;
+    points[id.xyz] = density * endOfBiomeMultiplier.x * startOfBiomeMultiplier.x * endOfBiomeMultiplier.y * startOfBiomeMultiplier.y + absoluteFloor + absoluteCeiling + terra;
     // points[id.xyz] = density + absoluteFloor + absoluteCeiling;
     // points[id.xyz] = density;
 }
@@ -188,7 +188,7 @@ void MountainsDensity (int3 id : SV_DispatchThreadID) {
     density += 65;
 
     // Adding terraforming points
-    density += getTerraformingPoints(ws);
+    float terra = getTerraformingPoints(ws);
 
     // ground floor, must always be present to avoid inexistent mesh at the bottom
     float absoluteFloor = saturate((7 - ws.y)) * 600;
@@ -199,7 +199,7 @@ void MountainsDensity (int3 id : SV_DispatchThreadID) {
     float2 endOfBiomeMultiplier = getEndOfBiomeMultiplier(biomeWs);
     float2 startOfBiomeMultiplier = getStartOfBiomeMultiplier(biomeWs);
 
-    points[id.xyz] = density * endOfBiomeMultiplier.x * startOfBiomeMultiplier.x * endOfBiomeMultiplier.y * startOfBiomeMultiplier.y + absoluteFloor + absoluteCeiling;
+    points[id.xyz] = density * endOfBiomeMultiplier.x * startOfBiomeMultiplier.x * endOfBiomeMultiplier.y * startOfBiomeMultiplier.y + absoluteFloor + absoluteCeiling + terra;
     // points[id.xyz] = density  + absoluteFloor + absoluteCeiling;
     // points[id.xyz] = density;
 }
@@ -246,7 +246,7 @@ void RockOceanDensity (int3 id : SV_DispatchThreadID) {
     density += 30;
 
     // Adding terraforming points
-    density += getTerraformingPoints(ws);
+    float terra = getTerraformingPoints(ws);
 
     // ground floor, must always be present to avoid inexistent mesh at the bottom
     float absoluteFloor = saturate((7 - ws.y)) * 600;
@@ -257,7 +257,7 @@ void RockOceanDensity (int3 id : SV_DispatchThreadID) {
     float2 endOfBiomeMultiplier = getEndOfBiomeMultiplier(biomeWs);
     float2 startOfBiomeMultiplier = getStartOfBiomeMultiplier(biomeWs);
 
-    points[id.xyz] = density * endOfBiomeMultiplier.x * startOfBiomeMultiplier.x * endOfBiomeMultiplier.y * startOfBiomeMultiplier.y + absoluteFloor + absoluteCeiling;
+    points[id.xyz] = density * endOfBiomeMultiplier.x * startOfBiomeMultiplier.x * endOfBiomeMultiplier.y * startOfBiomeMultiplier.y + absoluteFloor + absoluteCeiling + terra;
     // points[id.xyz] = density  + absoluteFloor + + absoluteCeiling;
     // points[id.xyz] = density;
 }

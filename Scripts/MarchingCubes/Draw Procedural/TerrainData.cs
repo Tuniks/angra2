@@ -7,6 +7,8 @@ public static class TerrainData{
     public const float scale = 1f;
     public const float surfaceLevel = 10f;
 
+    public static int seed = 0;
+
     public static Vector2[] noiseParameters = new Vector2[6] {
         new Vector2(0.09f, 1),
         new Vector2(0.042f, 3.94f),

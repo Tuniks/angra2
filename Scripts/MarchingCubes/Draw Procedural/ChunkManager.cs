@@ -80,8 +80,7 @@ public class ChunkManager : MonoBehaviour{
                     DrawChunk chunk = chunkDictionary[chunkID][0];
                     int updatedLOD = GetLODFromID(chunkID); 
                     if (chunk.lod != updatedLOD){
-                        RemoveChunks(chunkID);
-                        CreateChunks(chunkID, updatedLOD);
+                        UpdateLOD(chunkID, updatedLOD);
                     } 
                 }
             }
@@ -119,6 +118,15 @@ public class ChunkManager : MonoBehaviour{
         chunkDictionary.Remove(id);
     }
 
+    void UpdateLOD(Vector2 id, int lod){
+        if(!chunkDictionary.ContainsKey(id)) return;
+        DrawChunk[] chunks = chunkDictionary[id];
+        foreach(DrawChunk c in chunks){
+            c.UpdateLOD(lod);
+            c.Draw();
+        }
+    }
+
     float SqrPlayerDistanceFromCenter(Vector2 chunkID) {
         Vector2 position = chunkID * chunkSize;
         Vector2 center = position + Vector2.one * chunkSize / 2;
@@ -152,8 +160,8 @@ public class ChunkManager : MonoBehaviour{
         Vector2 centerID = GetIDFromPosition(new Vector2(pos.x, pos.z));
         neighbors.Add(new Vector2(0,0));
 
-        Vector2 forwardID = GetIDFromPosition(new Vector2(pos.x + range, pos.z + range));
-        Vector2 backwardID = GetIDFromPosition(new Vector2(pos.x - range, pos.z - range));
+        Vector2 forwardID = GetIDFromPosition(new Vector2(pos.x + (5*range), pos.z + (5*range)));
+        Vector2 backwardID = GetIDFromPosition(new Vector2(pos.x - (5*range), pos.z - (5*range)));
         
         if(centerID.x != forwardID.x) neighbors.Add(new Vector2(1,0));
         if(centerID.y != forwardID.y) neighbors.Add(new Vector2(0,1));
@@ -165,18 +173,24 @@ public class ChunkManager : MonoBehaviour{
         for(int i = 0; i < neighbors.Count; i++){
             idsInRange[i] = centerID + neighbors[i];
         }
+
+        Debug.Log(centerID.ToString() + " " + forwardID.ToString() + " " + backwardID.ToString());
+        Debug.Log(pos.ToString() + " " + neighbors.Count);
         return idsInRange;
     }
 
     public void RedrawChunksInRange(Vector2[] range){
-        int lod = (int) detailLevels[0].x;
         foreach(Vector2 id in range){
-            RemoveChunks(id);
-            CreateChunks(id, lod);
+            if(chunkDictionary.ContainsKey(id)){
+                DrawChunk[] chunks = chunkDictionary[id];
+                foreach(DrawChunk c in chunks){
+                    c.Draw();
+                }
+            }
         }
     }
 
     Vector2 GetIDFromPosition(Vector2 pos){
-        return new Vector2(Mathf.FloorToInt(pos.x / chunkSize), Mathf.FloorToInt(pos.y / chunkSize));
+        return new Vector2(Mathf.FloorToInt(pos.x / (float) (chunkSize)), Mathf.FloorToInt(pos.y / (float) (chunkSize)));
     }
 }
